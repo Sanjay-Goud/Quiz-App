@@ -1,9 +1,9 @@
 // API Configuration
 
 const API_URLS = {
-    auth: `https://quiz-auth-service.onrender.com`,
-    question: `https://quiz-question-service.onrender.com`,
-    quiz: `https://quiz-quiz-service.onrender.com`
+    auth: `https://quiz-auth-service.onrender.com/auth`,
+    question: `https://quiz-question-service.onrender.com/question`,
+    quiz: `https://quiz-quiz-service.onrender.com/quiz`
 };
 
 // Auth Helper Functions

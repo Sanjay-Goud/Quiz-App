@@ -1,9 +1,9 @@
 // API Configuration
-const API_BASE = 'http://localhost';
+
 const API_URLS = {
-    auth: `${API_BASE}:8082/auth`,
-    question: `${API_BASE}:8080/question`,
-    quiz: `${API_BASE}:8081/quiz`
+    auth: `https://quiz-auth-service.onrender.com`,
+    question: `https://quiz-question-service.onrender.com`,
+    quiz: `https://quiz-quiz-service.onrender.com`
 };
 
 // Auth Helper Functions

@@ -1,5 +1,6 @@
 package com.sanjay.quiz_service.service;
 
+import com.sanjay.quiz_service.dto.QuizSummaryDto;
 import com.sanjay.quiz_service.entity.QuestionWrapper;
 import com.sanjay.quiz_service.entity.Quiz;
 import com.sanjay.quiz_service.entity.Response;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @AllArgsConstructor
@@ -49,6 +51,7 @@ public class QuizService {
             Quiz quiz = new Quiz();
             quiz.setTitle(title);
             quiz.setQuestionIds(questionIds);
+            quiz.setCategory(category); // Store category for listing
             quizRepository.save(quiz);
 
             return new ResponseEntity<>("Quiz created successfully with ID: " + quiz.getId(), HttpStatus.CREATED);
@@ -58,6 +61,26 @@ public class QuizService {
         } catch (Exception e) {
             log.error("Error creating quiz: {}", e.getMessage(), e);
             return new ResponseEntity<>("Failed to create quiz", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public ResponseEntity<List<QuizSummaryDto>> getAllQuizzes() {
+        try {
+            List<Quiz> quizzes = quizRepository.findAll();
+
+            List<QuizSummaryDto> summaries = quizzes.stream()
+                    .map(quiz -> QuizSummaryDto.builder()
+                            .id(quiz.getId())
+                            .title(quiz.getTitle())
+                            .category(quiz.getCategory() != null ? quiz.getCategory() : "General")
+                            .questionCount(quiz.getQuestionIds() != null ? quiz.getQuestionIds().size() : 0)
+                            .build())
+                    .collect(Collectors.toList());
+
+            return new ResponseEntity<>(summaries, HttpStatus.OK);
+        } catch (Exception e) {
+            log.error("Error fetching all quizzes: {}", e.getMessage(), e);
+            return new ResponseEntity<>(new ArrayList<>(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

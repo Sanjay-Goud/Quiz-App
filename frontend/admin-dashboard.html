@@ -249,7 +249,7 @@
         `).join('');
     }
 
-    // Create Quiz
+    // Create Quiz - FIXED to handle text response
     document.getElementById('createQuizForm').addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -260,13 +260,27 @@
         };
 
         try {
-            const response = await apiRequest(`${API_URLS.quiz}/create`, {
+            const token = getToken();
+
+            // Use fetch directly to handle text response
+            const response = await fetch(`${API_URLS.quiz}/create`, {
                 method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify(quizData)
             });
 
-            showMessage('createQuizMessage', 'Quiz created successfully!', 'success');
-            document.getElementById('createQuizForm').reset();
+            // Get response as text (not JSON)
+            const text = await response.text();
+
+            if (response.ok) {
+                showMessage('createQuizMessage', text, 'success');
+                document.getElementById('createQuizForm').reset();
+            } else {
+                showMessage('createQuizMessage', text || 'Failed to create quiz', 'error');
+            }
         } catch (error) {
             showMessage('createQuizMessage', error.message || 'Failed to create quiz', 'error');
         }

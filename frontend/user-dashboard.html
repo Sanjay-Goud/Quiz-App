@@ -61,14 +61,6 @@
             `Welcome back, ${userInfo.username}!`;
     }
 
-    // Mock quiz data (since we need quiz IDs from backend)
-    // In production, you would fetch this from a /quiz/all endpoint
-    const mockQuizzes = [
-        { id: 1, title: 'Java Basics', category: 'Java', questionCount: 5 },
-        { id: 2, title: 'Python Fundamentals', category: 'Python', questionCount: 5 },
-        { id: 3, title: 'JavaScript Quiz', category: 'JavaScript', questionCount: 5 }
-    ];
-
     function displayQuizzes(quizzes) {
         const container = document.getElementById('quizzesContainer');
 
@@ -86,8 +78,8 @@
             <div class="quiz-card" onclick="startQuiz(${quiz.id})">
                 <h3>${quiz.title}</h3>
                 <div class="quiz-info">
-                    <span>📚 Category: ${quiz.category}</span>
-                    <span>❓ Questions: ${quiz.questionCount}</span>
+                    <span>📚 Category: ${quiz.category || 'General'}</span>
+                    <span>❓ Questions: ${quiz.questionCount || 0}</span>
                 </div>
                 <button class="btn btn-primary" onclick="event.stopPropagation(); startQuiz(${quiz.id})">
                     Start Quiz
@@ -100,25 +92,31 @@
         window.location.href = `quiz.html?id=${quizId}`;
     }
 
-    // Load quizzes
+    // Load quizzes from backend
     async function loadQuizzes() {
-        try {
-            // In a real scenario, fetch from backend
-            // const response = await apiRequest(`${API_URLS.quiz}/all`);
+        showLoading(true);
 
-            // For now, use mock data
-            setTimeout(() => {
-                showLoading(false);
-                displayQuizzes(mockQuizzes);
-            }, 500);
+        try {
+            const response = await apiRequest(`${API_URLS.quiz}/all`);
+
+            showLoading(false);
+
+            if (response && Array.isArray(response)) {
+                displayQuizzes(response);
+            } else {
+                showMessage('message', 'No quizzes found', 'info');
+                displayQuizzes([]);
+            }
 
         } catch (error) {
             showLoading(false);
-            showMessage('message', 'Failed to load quizzes', 'error');
-            console.error(error);
+            showMessage('message', 'Failed to load quizzes: ' + error.message, 'error');
+            console.error('Error loading quizzes:', error);
+            displayQuizzes([]);
         }
     }
 
+    // Load quizzes on page load
     loadQuizzes();
 </script>
 </body>

@@ -1,6 +1,7 @@
 package com.sanjay.quiz_service.controller;
 
 import com.sanjay.quiz_service.dto.QuizDto;
+import com.sanjay.quiz_service.dto.QuizSummaryDto;
 import com.sanjay.quiz_service.entity.QuestionWrapper;
 import com.sanjay.quiz_service.entity.Response;
 import com.sanjay.quiz_service.service.QuizService;
@@ -29,6 +30,11 @@ public class QuizController {
                 quizDto.getNoOfQ(),
                 quizDto.getTitle()
         );
+    }
+
+    @GetMapping("all")
+    public ResponseEntity<List<QuizSummaryDto>> getAllQuizzes() {
+        return quizService.getAllQuizzes();
     }
 
     @GetMapping("get/{id}")

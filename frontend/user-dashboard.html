@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Available Quizzes - Quiz App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<nav class="navbar">
+    <div class="nav-container">
+        <div class="nav-brand">QuizMaster</div>
+        <button class="nav-toggle" id="navToggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <ul class="nav-menu" id="navMenu">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="user-dashboard.html" class="active">Quizzes</a></li>
+            <li id="nav-admin"><a href="admin-dashboard.html">Admin</a></li>
+            <li id="nav-logout">
+                <a href="#" id="logoutBtn">Logout</a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<main class="container">
+    <div class="card">
+        <div class="card-header">
+            <h2>Available Quizzes</h2>
+            <p id="userWelcome">Welcome back!</p>
+        </div>
+
+        <div id="message" class="alert" style="display: none;"></div>
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Loading quizzes...</p>
+        </div>
+
+        <div id="quizzesContainer"></div>
+    </div>
+</main>
+
+<script src="auth-utils.js"></script>
+<script>
+    // Mobile nav toggle
+    document.getElementById('navToggle').addEventListener('click', () => {
+        document.getElementById('navMenu').classList.toggle('active');
+    });
+
+    // Check authentication
+    requireAuth();
+    updateNavbar();
+
+    // Display user info
+    const userInfo = getUserInfo();
+    if (userInfo) {
+        document.getElementById('userWelcome').textContent =
+            `Welcome back, ${userInfo.username}!`;
+    }
+
+    // Mock quiz data (since we need quiz IDs from backend)
+    // In production, you would fetch this from a /quiz/all endpoint
+    const mockQuizzes = [
+        { id: 1, title: 'Java Basics', category: 'Java', questionCount: 5 },
+        { id: 2, title: 'Python Fundamentals', category: 'Python', questionCount: 5 },
+        { id: 3, title: 'JavaScript Quiz', category: 'JavaScript', questionCount: 5 }
+    ];
+
+    function displayQuizzes(quizzes) {
+        const container = document.getElementById('quizzesContainer');
+
+        if (quizzes.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: var(--text-light);">
+                    <p>No quizzes available at the moment.</p>
+                    <p>Please check back later!</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = quizzes.map(quiz => `
+            <div class="quiz-card" onclick="startQuiz(${quiz.id})">
+                <h3>${quiz.title}</h3>
+                <div class="quiz-info">
+                    <span>📚 Category: ${quiz.category}</span>
+                    <span>❓ Questions: ${quiz.questionCount}</span>
+                </div>
+                <button class="btn btn-primary" onclick="event.stopPropagation(); startQuiz(${quiz.id})">
+                    Start Quiz
+                </button>
+            </div>
+        `).join('');
+    }
+
+    function startQuiz(quizId) {
+        window.location.href = `quiz.html?id=${quizId}`;
+    }
+
+    // Load quizzes
+    async function loadQuizzes() {
+        try {
+            // In a real scenario, fetch from backend
+            // const response = await apiRequest(`${API_URLS.quiz}/all`);
+
+            // For now, use mock data
+            setTimeout(() => {
+                showLoading(false);
+                displayQuizzes(mockQuizzes);
+            }, 500);
+
+        } catch (error) {
+            showLoading(false);
+            showMessage('message', 'Failed to load quizzes', 'error');
+            console.error(error);
+        }
+    }
+
+    loadQuizzes();
+</script>
+</body>
+</html>

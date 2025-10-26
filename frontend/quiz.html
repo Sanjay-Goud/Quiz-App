@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Take Quiz - Quiz App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<nav class="navbar">
+    <div class="nav-container">
+        <div class="nav-brand">QuizMaster</div>
+        <button class="nav-toggle" id="navToggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <ul class="nav-menu" id="navMenu">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="user-dashboard.html">Quizzes</a></li>
+            <li id="nav-admin"><a href="admin-dashboard.html">Admin</a></li>
+            <li id="nav-logout">
+                <a href="#" id="logoutBtn">Logout</a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<main class="container">
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Loading quiz...</p>
+    </div>
+
+    <div id="quizContainer" style="display: none;">
+        <div class="question-container">
+            <div class="question-header">
+                <span class="question-number" id="questionNumber">Question 1 of 5</span>
+                <span id="timer" style="font-weight: 600; color: var(--primary);"></span>
+            </div>
+
+            <h2 class="question-text" id="questionText"></h2>
+
+            <div class="options" id="optionsContainer"></div>
+
+            <div class="quiz-navigation">
+                <button class="btn btn-secondary" id="prevBtn" onclick="previousQuestion()" disabled>
+                    Previous
+                </button>
+                <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()">
+                    Next
+                </button>
+                <button class="btn btn-success" id="submitBtn" onclick="submitQuiz()" style="display: none;">
+                    Submit Quiz
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="scoreContainer" style="display: none;">
+        <div class="score-container">
+            <h1>Quiz Completed!</h1>
+            <p style="font-size: 1.2rem; color: var(--text-light); margin: 1rem 0;">
+                Your Score
+            </p>
+            <div class="score-value" id="scoreValue">0/5</div>
+            <p style="font-size: 1.1rem; margin: 2rem 0;">
+                <span id="scorePercentage">0%</span> Correct
+            </p>
+            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                <a href="user-dashboard.html" class="btn btn-primary">Take Another Quiz</a>
+                <a href="index.html" class="btn btn-secondary">Go Home</a>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="auth-utils.js"></script>
+<script>
+    // Mobile nav toggle
+    document.getElementById('navToggle').addEventListener('click', () => {
+        document.getElementById('navMenu').classList.toggle('active');
+    });
+
+    // Check authentication
+    requireAuth();
+    updateNavbar();
+
+    // Quiz state
+    let quizId = null;
+    let questions = [];
+    let currentQuestionIndex = 0;
+    let responses = [];
+    let startTime = Date.now();
+
+    // Get quiz ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    quizId = urlParams.get('id');
+
+    if (!quizId) {
+        alert('No quiz ID provided');
+        window.location.href = 'user-dashboard.html';
+    }
+
+    // Load quiz questions
+    async function loadQuiz() {
+        try {
+            const response = await apiRequest(`${API_URLS.quiz}/get/${quizId}`);
+
+            if (response && response.length > 0) {
+                questions = response;
+                responses = new Array(questions.length).fill(null);
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('quizContainer').style.display = 'block';
+
+                displayQuestion();
+                startTimer();
+            } else {
+                throw new Error('No questions found for this quiz');
+            }
+        } catch (error) {
+            alert('Failed to load quiz: ' + error.message);
+            window.location.href = 'user-dashboard.html';
+        }
+    }
+
+    // Display current question
+    function displayQuestion() {
+        const question = questions[currentQuestionIndex];
+
+        document.getElementById('questionNumber').textContent =
+            `Question ${currentQuestionIndex + 1} of ${questions.length}`;
+        document.getElementById('questionText').textContent = question.questionTitle;
+
+        const optionsContainer = document.getElementById('optionsContainer');
+        optionsContainer.innerHTML = `
+            <label class="option ${responses[currentQuestionIndex] === question.option1 ? 'selected' : ''}">
+                <input type="radio" name="answer" value="${question.option1}"
+                       ${responses[currentQuestionIndex] === question.option1 ? 'checked' : ''}
+                       onchange="selectOption('${question.option1}')">
+                ${question.option1}
+            </label>
+            <label class="option ${responses[currentQuestionIndex] === question.option2 ? 'selected' : ''}">
+                <input type="radio" name="answer" value="${question.option2}"
+                       ${responses[currentQuestionIndex] === question.option2 ? 'checked' : ''}
+                       onchange="selectOption('${question.option2}')">
+                ${question.option2}
+            </label>
+            <label class="option ${responses[currentQuestionIndex] === question.option3 ? 'selected' : ''}">
+                <input type="radio" name="answer" value="${question.option3}"
+                       ${responses[currentQuestionIndex] === question.option3 ? 'checked' : ''}
+                       onchange="selectOption('${question.option3}')">
+                ${question.option3}
+            </label>
+            <label class="option ${responses[currentQuestionIndex] === question.option4 ? 'selected' : ''}">
+                <input type="radio" name="answer" value="${question.option4}"
+                       ${responses[currentQuestionIndex] === question.option4 ? 'checked' : ''}
+                       onchange="selectOption('${question.option4}')">
+                ${question.option4}
+            </label>
+        `;
+
+        // Update navigation buttons
+        document.getElementById('prevBtn').disabled = currentQuestionIndex === 0;
+
+        if (currentQuestionIndex === questions.length - 1) {
+            document.getElementById('nextBtn').style.display = 'none';
+            document.getElementById('submitBtn').style.display = 'block';
+        } else {
+            document.getElementById('nextBtn').style.display = 'block';
+            document.getElementById('submitBtn').style.display = 'none';
+        }
+    }
+
+    // Select option
+    function selectOption(value) {
+        responses[currentQuestionIndex] = value;
+
+        // Update selected class
+        document.querySelectorAll('.option').forEach(opt => {
+            opt.classList.remove('selected');
+        });
+        event.target.closest('.option').classList.add('selected');
+    }
+
+    // Navigation functions
+    function previousQuestion() {
+        if (currentQuestionIndex > 0) {
+            currentQuestionIndex--;
+            displayQuestion();
+        }
+    }
+
+    function nextQuestion() {
+        if (currentQuestionIndex < questions.length - 1) {
+            currentQuestionIndex++;
+            displayQuestion();
+        }
+    }
+
+    // Timer
+    function startTimer() {
+        setInterval(() => {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            document.getElementById('timer').textContent =
+                `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }, 1000);
+    }
+
+    // Submit quiz
+    async function submitQuiz() {
+        // Check if all questions are answered
+        const unanswered = responses.filter(r => r === null).length;
+
+        if (unanswered > 0) {
+            if (!confirm(`You have ${unanswered} unanswered question(s). Submit anyway?`)) {
+                return;
+            }
+        }
+
+        // Prepare response data
+        const submitData = questions.map((q, index) => ({
+            id: q.id,
+            response: responses[index] || ''
+        }));
+
+        try {
+            const response = await apiRequest(`${API_URLS.quiz}/submit/${quizId}`, {
+                method: 'POST',
+                body: JSON.stringify(submitData)
+            });
+
+            displayScore(response);
+        } catch (error) {
+            alert('Failed to submit quiz: ' + error.message);
+        }
+    }
+
+    // Display score
+    function displayScore(score) {
+        const totalQuestions = questions.length;
+        const percentage = Math.round((score / totalQuestions) * 100);
+
+        document.getElementById('quizContainer').style.display = 'none';
+        document.getElementById('scoreContainer').style.display = 'block';
+
+        document.getElementById('scoreValue').textContent = `${score}/${totalQuestions}`;
+        document.getElementById('scorePercentage').textContent = `${percentage}%`;
+    }
+
+    // Load quiz on page load
+    loadQuiz();
+</script>
+</body>
+</html>

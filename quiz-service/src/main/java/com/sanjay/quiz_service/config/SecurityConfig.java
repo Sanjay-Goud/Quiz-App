@@ -24,19 +24,11 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                .cors(cors -> cors.configure(http)) // Enable CORS
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints
                         .requestMatchers("/actuator/**").permitAll()
-
-                        // Admin only - Create quiz
-                        .requestMatchers(HttpMethod.POST, "/quiz/create").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/quiz/**").hasRole("ADMIN")
-
-                        // User and Admin - Get quiz and submit
-                        .requestMatchers(HttpMethod.GET, "/quiz/**").hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/quiz/submit/**").hasAnyRole("USER", "ADMIN")
-
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Allow preflight
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

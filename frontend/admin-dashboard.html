@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Quiz App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<nav class="navbar">
+    <div class="nav-container">
+        <div class="nav-brand">QuizMaster</div>
+        <button class="nav-toggle" id="navToggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <ul class="nav-menu" id="navMenu">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="user-dashboard.html">Quizzes</a></li>
+            <li><a href="admin-dashboard.html" class="active">Admin</a></li>
+            <li id="nav-logout">
+                <a href="#" id="logoutBtn">Logout</a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<main class="container">
+    <h1 style="margin-bottom: 2rem;">Admin Dashboard</h1>
+
+    <!-- Add Question Section -->
+    <div class="card">
+        <div class="card-header">
+            <h2>Add New Question</h2>
+        </div>
+
+        <div id="addQuestionMessage" class="alert" style="display: none;"></div>
+
+        <form id="addQuestionForm">
+            <div class="form-group">
+                <label for="questionTitle">Question</label>
+                <textarea id="questionTitle" required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="option1">Option 1</label>
+                <input type="text" id="option1" required>
+            </div>
+
+            <div class="form-group">
+                <label for="option2">Option 2</label>
+                <input type="text" id="option2" required>
+            </div>
+
+            <div class="form-group">
+                <label for="option3">Option 3</label>
+                <input type="text" id="option3" required>
+            </div>
+
+            <div class="form-group">
+                <label for="option4">Option 4</label>
+                <input type="text" id="option4" required>
+            </div>
+
+            <div class="form-group">
+                <label for="answer">Correct Answer</label>
+                <input type="text" id="answer" required placeholder="Enter the exact correct option">
+            </div>
+
+            <div class="form-group">
+                <label for="category">Category</label>
+                <input type="text" id="category" required>
+            </div>
+
+            <div class="form-group">
+                <label for="difficultyLevel">Difficulty Level</label>
+                <select id="difficultyLevel">
+                    <option value="Easy">Easy</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Hard">Hard</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Add Question</button>
+        </form>
+    </div>
+
+    <!-- View Questions Section -->
+    <div class="card">
+        <div class="card-header">
+            <h2>All Questions</h2>
+            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                <input type="text" id="categoryFilter" placeholder="Filter by category"
+                       style="flex: 1; padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px;">
+                <button onclick="filterQuestions()" class="btn btn-secondary">Filter</button>
+                <button onclick="loadAllQuestions()" class="btn btn-secondary">Show All</button>
+            </div>
+        </div>
+
+        <div id="questionsLoading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Loading questions...</p>
+        </div>
+
+        <div class="table-container">
+            <table id="questionsTable">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Question</th>
+                    <th>Category</th>
+                    <th>Difficulty</th>
+                    <th>Answer</th>
+                </tr>
+                </thead>
+                <tbody id="questionsTableBody">
+                <tr>
+                    <td colspan="5" style="text-align: center;">No questions loaded</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Create Quiz Section -->
+    <div class="card">
+        <div class="card-header">
+            <h2>Create New Quiz</h2>
+        </div>
+
+        <div id="createQuizMessage" class="alert" style="display: none;"></div>
+
+        <form id="createQuizForm">
+            <div class="form-group">
+                <label for="quizTitle">Quiz Title</label>
+                <input type="text" id="quizTitle" required>
+            </div>
+
+            <div class="form-group">
+                <label for="quizCategory">Category</label>
+                <input type="text" id="quizCategory" required>
+            </div>
+
+            <div class="form-group">
+                <label for="noOfQuestions">Number of Questions</label>
+                <input type="number" id="noOfQuestions" required min="1" max="20">
+            </div>
+
+            <button type="submit" class="btn btn-success">Create Quiz</button>
+        </form>
+    </div>
+</main>
+
+<script src="auth-utils.js"></script>
+<script>
+    // Mobile nav toggle
+    document.getElementById('navToggle').addEventListener('click', () => {
+        document.getElementById('navMenu').classList.toggle('active');
+    });
+
+    // Check admin authentication
+    requireAuth('ADMIN');
+    updateNavbar();
+
+    // Add Question
+    document.getElementById('addQuestionForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const questionData = {
+            questionTitle: document.getElementById('questionTitle').value,
+            option1: document.getElementById('option1').value,
+            option2: document.getElementById('option2').value,
+            option3: document.getElementById('option3').value,
+            option4: document.getElementById('option4').value,
+            answer: document.getElementById('answer').value,
+            category: document.getElementById('category').value,
+            difficultyLevel: document.getElementById('difficultyLevel').value
+        };
+
+        try {
+            const response = await apiRequest(`${API_URLS.question}/addQuestion`, {
+                method: 'POST',
+                body: JSON.stringify(questionData)
+            });
+
+            showMessage('addQuestionMessage', 'Question added successfully!', 'success');
+            document.getElementById('addQuestionForm').reset();
+            loadAllQuestions();
+        } catch (error) {
+            showMessage('addQuestionMessage', error.message || 'Failed to add question', 'error');
+        }
+    });
+
+    // Load All Questions
+    async function loadAllQuestions() {
+        document.getElementById('questionsLoading').style.display = 'block';
+
+        try {
+            const response = await apiRequest(`${API_URLS.question}/allQuestions`);
+            displayQuestions(response);
+        } catch (error) {
+            console.error('Failed to load questions:', error);
+            showMessage('addQuestionMessage', 'Failed to load questions', 'error');
+        } finally {
+            document.getElementById('questionsLoading').style.display = 'none';
+        }
+    }
+
+    // Filter Questions by Category
+    async function filterQuestions() {
+        const category = document.getElementById('categoryFilter').value.trim();
+
+        if (!category) {
+            alert('Please enter a category to filter');
+            return;
+        }
+
+        document.getElementById('questionsLoading').style.display = 'block';
+
+        try {
+            const response = await apiRequest(`${API_URLS.question}/category/${category}`);
+            displayQuestions(response);
+        } catch (error) {
+            console.error('Failed to filter questions:', error);
+            showMessage('addQuestionMessage', 'Failed to filter questions', 'error');
+        } finally {
+            document.getElementById('questionsLoading').style.display = 'none';
+        }
+    }
+
+    // Display Questions in Table
+    function displayQuestions(questions) {
+        const tbody = document.getElementById('questionsTableBody');
+
+        if (!questions || questions.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No questions found</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = questions.map(q => `
+            <tr>
+                <td>${q.id}</td>
+                <td>${q.questionTitle}</td>
+                <td>${q.category || 'N/A'}</td>
+                <td>${q.difficultyLevel || 'N/A'}</td>
+                <td>${q.answer}</td>
+            </tr>
+        `).join('');
+    }
+
+    // Create Quiz
+    document.getElementById('createQuizForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const quizData = {
+            title: document.getElementById('quizTitle').value,
+            category: document.getElementById('quizCategory').value,
+            noOfQ: parseInt(document.getElementById('noOfQuestions').value)
+        };
+
+        try {
+            const response = await apiRequest(`${API_URLS.quiz}/create`, {
+                method: 'POST',
+                body: JSON.stringify(quizData)
+            });
+
+            showMessage('createQuizMessage', 'Quiz created successfully!', 'success');
+            document.getElementById('createQuizForm').reset();
+        } catch (error) {
+            showMessage('createQuizMessage', error.message || 'Failed to create quiz', 'error');
+        }
+    });
+
+    // Load questions on page load
+    loadAllQuestions();
+</script>
+</body>
+</html>

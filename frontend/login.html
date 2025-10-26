@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Quiz App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<nav class="navbar">
+    <div class="nav-container">
+        <div class="nav-brand">QuizMaster</div>
+        <button class="nav-toggle" id="navToggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <ul class="nav-menu" id="navMenu">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="login.html" class="active">Login</a></li>
+            <li><a href="register.html">Register</a></li>
+        </ul>
+    </div>
+</nav>
+
+<main class="container">
+    <div class="form-container">
+        <h2 style="text-align: center; margin-bottom: 2rem;">Login to Your Account</h2>
+
+        <div id="message" class="alert" style="display: none;"></div>
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Logging in...</p>
+        </div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
+        </form>
+
+        <p style="text-align: center; margin-top: 1rem;">
+            Don't have an account? <a href="register.html">Register here</a>
+        </p>
+    </div>
+</main>
+
+<script src="auth-utils.js"></script>
+<script>
+    // Mobile nav toggle
+    document.getElementById('navToggle').addEventListener('click', () => {
+        document.getElementById('navMenu').classList.toggle('active');
+    });
+
+    // Redirect if already logged in
+    if (isAuthenticated()) {
+        window.location.href = isAdmin() ? 'admin-dashboard.html' : 'user-dashboard.html';
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+
+        showLoading(true);
+
+        try {
+            const response = await apiRequest(`${API_URLS.auth}/login`, {
+                method: 'POST',
+                body: JSON.stringify({ username, password })
+            });
+
+            if (response.success && response.data) {
+                const { accessToken, userInfo } = response.data;
+                setAuthData(accessToken, userInfo.role, userInfo);
+
+                showMessage('message', 'Login successful! Redirecting...', 'success');
+
+                setTimeout(() => {
+                    window.location.href = userInfo.role === 'ADMIN' ?
+                        'admin-dashboard.html' : 'user-dashboard.html';
+                }, 1000);
+            } else {
+                showMessage('message', 'Login failed. Please try again.', 'error');
+            }
+        } catch (error) {
+            showMessage('message', error.message || 'Invalid username or password', 'error');
+        } finally {
+            showLoading(false);
+        }
+    });
+</script>
+</body>
+</html>

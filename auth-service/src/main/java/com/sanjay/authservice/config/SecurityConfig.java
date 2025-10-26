@@ -31,10 +31,11 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configure(http)) // Enable CORS
+                .cors(cors -> {}) // Enable CORS with default config
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**", "/actuator/**").permitAll()
+                        .requestMatchers("/auth/register", "/auth/login", "/auth/refresh", "/auth/validate").permitAll()
+                        .requestMatchers("/actuator/**", "/error").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Allow preflight
                         .anyRequest().authenticated()
                 )

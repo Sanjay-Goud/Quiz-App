@@ -37,27 +37,40 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         final String authHeader = request.getHeader("Authorization");
 
+        log.debug("Processing request to: {}", request.getRequestURI());
+        log.debug("Authorization header present: {}", authHeader != null);
+
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            log.debug("No Bearer token found, continuing without authentication");
             filterChain.doFilter(request, response);
             return;
         }
 
         try {
             final String jwt = authHeader.substring(7);
+            log.debug("Extracted JWT token (first 20 chars): {}...", jwt.substring(0, Math.min(20, jwt.length())));
+
             final Claims claims = extractAllClaims(jwt);
             final String username = claims.getSubject();
 
+            log.debug("Extracted username from token: {}", username);
+
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 // Extract role from token
-                String role = "ROLE_USER"; // default
+                String roleFromToken = "USER"; // default
 
                 if (claims.get("role") != null) {
-                    role = "ROLE_" + claims.get("role").toString();
+                    roleFromToken = claims.get("role").toString();
+                    log.debug("Extracted role from token: {}", roleFromToken);
                 }
 
+                // Create authority with ROLE_ prefix
+                String authorityString = "ROLE_" + roleFromToken;
                 List<SimpleGrantedAuthority> authorities = List.of(
-                        new SimpleGrantedAuthority(role)
+                        new SimpleGrantedAuthority(authorityString)
                 );
+
+                log.debug("Setting authorities: {}", authorities);
 
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                         username,
@@ -68,10 +81,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
 
-                log.debug("User {} authenticated with role {}", username, role);
+                log.info("✅ User '{}' authenticated successfully with role '{}'", username, authorityString);
+            } else if (username == null) {
+                log.warn("⚠️ Username is null in JWT token");
+            } else {
+                log.debug("Authentication already exists in context");
             }
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            log.error("❌ JWT token is expired: {}", e.getMessage());
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("{\"error\":\"Token expired\"}");
+            return;
+        } catch (io.jsonwebtoken.security.SignatureException e) {
+            log.error("❌ JWT signature validation failed: {}", e.getMessage());
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("{\"error\":\"Invalid token signature\"}");
+            return;
         } catch (Exception e) {
-            log.error("JWT authentication error: {}", e.getMessage());
+            log.error("❌ JWT authentication error: {}", e.getMessage(), e);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("{\"error\":\"Authentication failed\"}");
+            return;
         }
 
         filterChain.doFilter(request, response);

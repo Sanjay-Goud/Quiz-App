@@ -10,15 +10,16 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                // Option 1: Specific origins (Recommended for production)
-                // .allowedOrigins("http://localhost:3000", "http://localhost:4200", "https://yourdomain.com")
-
-                // Option 2: Pattern-based (if wildcard needed)
-                .allowedOriginPatterns("*")
-
+                .allowedOrigins(
+                        "http://localhost:63342",  // IntelliJ built-in server
+                        "http://localhost:5500",   // Live Server
+                        "http://localhost:3000",   // React dev server
+                        "http://127.0.0.1:63342",
+                        "http://127.0.0.1:5500"
+                )
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                 .allowedHeaders("*")
                 .allowCredentials(true)
-                .maxAge(3600); // Cache preflight response for 1 hour
+                .maxAge(3600);
     }
 }

@@ -1,5 +1,6 @@
 package com.sanjay.quiz_service.feign;
 
+import com.sanjay.quiz_service.config.FeignConfig;
 import com.sanjay.quiz_service.entity.QuestionWrapper;
 import com.sanjay.quiz_service.entity.Response;
 import org.springframework.cloud.openfeign.FeignClient;
@@ -11,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
-@FeignClient("QUESTION-SERVICE")
+@FeignClient(name = "QUESTION-SERVICE", configuration = FeignConfig.class)
 public interface QuizInterface {
 
     @GetMapping("question/generate")

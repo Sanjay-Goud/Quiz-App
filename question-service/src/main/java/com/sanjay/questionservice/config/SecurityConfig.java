@@ -29,16 +29,21 @@ public class SecurityConfig {
                         // Public endpoints
                         .requestMatchers("/actuator/**").permitAll()
 
-                        // Admin only endpoints - Question CRUD
-                        .requestMatchers(HttpMethod.POST, "/question/addQuestion").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/question/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/question/**").hasRole("ADMIN")
+//                        // Admin only endpoints - Question CRUD
+//                        .requestMatchers(HttpMethod.POST, "/question/addQuestion").hasRole("ADMIN")
+//                        .requestMatchers(HttpMethod.PUT, "/question/**").hasRole("ADMIN")
+//                        .requestMatchers(HttpMethod.DELETE, "/question/**").hasRole("ADMIN")
+//
+//                        // These endpoints are called by quiz-service (internal)
+//                        .requestMatchers("/question/generate", "/question/getQuestions", "/question/getScore").permitAll()
+//
+//                        // User can view questions
+//                        .requestMatchers(HttpMethod.GET, "/question/**").hasAnyRole("USER", "ADMIN")
 
-                        // These endpoints are called by quiz-service (internal)
-                        .requestMatchers("/question/generate", "/question/getQuestions", "/question/getScore").permitAll()
 
-                        // User can view questions
-                        .requestMatchers(HttpMethod.GET, "/question/**").hasAnyRole("USER", "ADMIN")
+                                .requestMatchers(HttpMethod.GET, "/question/allQuestions").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/question/category/**").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/question/**").hasAnyRole("USER","ADMIN")
 
                         .anyRequest().authenticated()
                 )
